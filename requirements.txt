@@ -1,0 +1,12 @@
+numpy
+faiss-cpu
+langgraph
+langchain
+langchain-openai
+python-dotenv
+langchain-chroma
+pypdf
+python-docx
+langchain-community
+openai
+
