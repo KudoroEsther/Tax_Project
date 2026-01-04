@@ -13,6 +13,7 @@ from utils_openai import (
     setup_openai_api,
     create_embeddings,
     create_llm,
+    load_and_chunk_documents,
     create_vectorstore,
     system_prompt_def,
 )
@@ -44,7 +45,10 @@ llm = create_llm(api_key, temperature=0)
 
 #Load Documents and chunk
 #I will define a document loader and chunking function later
-
+chunks = load_and_chunk_documents(
+    data_path=r"C:\Users\owner\Desktop\TAX\TAX_Documents",
+    chunk_size=1000,
+    chunk_overlap=10)
 
 # Create embeddings model
 embeddings = create_embeddings(api_key)
@@ -53,14 +57,9 @@ print("\nModels initialized!")
 
 # Create vector store
 vectorstore = create_vectorstore(
-    documents="",
-    metadatas="",
-    ids="",
-    embeddings=embeddings,
-    collection_name="",
-    persist_directory=""
-)
-
+        chunks=chunks,
+        embeddings=embeddings,
+        collection_name="tax_collection")
 print("Vector store created and persisted!")
 
 #Do you think we should define the tools in utils_openai.py? or just define it here
@@ -173,3 +172,5 @@ def query_agent(query: str, thread_id: str = "default"):
     print(f"Agent: {final_answer}")
     print(f"Decision: {'RETRIEVED' if used_retrieval else 'ANSWERED DIRECTLY'}") # We can remove this later
     print(f"\n{'='*70}\n")
+
+query_agent("What does is the current tax bracket according to the Nigerian tax law 2025?", thread_id="test1")
