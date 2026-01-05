@@ -152,25 +152,58 @@ print(" Agentic RAG system compiled")
 
 
 # Define Query Agent
-def query_agent(query: str, thread_id: str = "default"):
-    print(f"\n{'='*70}")
-    print(f"Query: {query}")
-    print(f"{'='*70}")
+def query_agent( thread_id: str = "default"):
+    while True:
+        query = input("You: ").strip()
+        if query.lower() in ["exit", "quit"]:
+            print('Goodbye...')
+            break
+        if not query:
+            continue
 
-    result = agent.invoke(
-        {"messages": [HumanMessage(content=query)]},
-        config={"configurable": {"thread_id": thread_id}}
-    )
+        print(f"\n{'='*90}")
+        print(f"Query: {query}")
+        print(f"{'='*90}")
 
-    #Check if Retrieval was used
-    used_retrieval = any(
-        isinstance(message, AIMessage) and message.tool_calls
-        for message in result["messages"]
-    )
+        result = agent.invoke(
+            {"messages": [HumanMessage(content=query)]},
+            config={"configurable": {"thread_id": thread_id}}
+        )
 
-    final_answer = result["messages"][-1].content
-    print(f"Agent: {final_answer}")
-    print(f"Decision: {'RETRIEVED' if used_retrieval else 'ANSWERED DIRECTLY'}") # We can remove this later
-    print(f"\n{'='*70}\n")
+        #Check if Retrieval was used
+        used_retrieval = any(
+            isinstance(message, AIMessage) and message.tool_calls
+            for message in result["messages"]
+        )
 
-query_agent("What does is the current tax bracket according to the Nigerian tax law 2025?", thread_id="test1")
+        final_answer = result["messages"][-1].content
+        print(f"Agent: {final_answer}")
+        print(f"Decision: {'RETRIEVED' if used_retrieval else 'ANSWERED DIRECTLY'}") # We can remove this later
+        print(f"\n{'='*90}\n")
+
+query_agent(thread_id="test2")
+
+
+# def query_agent(query: str, thread_id: str = "default"):
+    
+#     print(f"\n{'='*70}")
+#     print(f"Query: {query}")
+#     print(f"{'='*70}")
+
+#     result = agent.invoke(
+#         {"messages": [HumanMessage(content=query)]},
+#         config={"configurable": {"thread_id": thread_id}}
+#     )
+
+#     #Check if Retrieval was used
+#     used_retrieval = any(
+#         isinstance(message, AIMessage) and message.tool_calls
+#         for message in result["messages"]
+#     )
+
+#     final_answer = result["messages"][-1].content
+#     print(f"Agent: {final_answer}")
+#     print(f"Decision: {'RETRIEVED' if used_retrieval else 'ANSWERED DIRECTLY'}") # We can remove this later
+#     print(f"\n{'='*70}\n")
+
+# query_agent("What does is the current tax bracket according to the Nigerian tax law 2025?", thread_id="test1")
