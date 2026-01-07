@@ -1,12 +1,13 @@
 numpy
-faiss-cpu
 langgraph
 langchain
 langchain-openai
 python-dotenv
 langchain-chroma
+chromadb
 pypdf
 python-docx
 langchain-community
 openai
-
+fastapi
+uvicorn
