@@ -1,117 +1,101 @@
-# Nigerian Tax Reform Bills 2024 Q&A Assistant
+# TaxGPT - Nigerian Tax Reform Assistant
 
-An Agentic RAG-powered AI Assistant that helps Nigerians understand the new tax reform bills.
+An Agentic RAG-powered AI Assistant built to help Nigerians navigate and understand the 2024/2025 tax reform bills with precision and clarity.
 
 ## 📋 Project Overview
 
-This project implements:
-- **Agentic RAG** using LangGraph for intelligent document retrieval
-- **Vector Database** (ChromaDB) for semantic search
-- **FastAPI Backend** with conversation memory
-- **React Frontend** with ChatGPT-style interface
+TaxGPT leverages an **Agentic RAG** architecture to provide authoritative answers on Nigerian tax reforms. It intelligently decides when to retrieve information from a curated knowledge base and when to answer directly, ensuring high accuracy for complex tax queries.
+
+### Tech Stack
+- **AI Engine**: LangGraph for agentic workflow and conversation state
+- **LLM**: OpenAI GPT models
+- **Vector Database**: ChromaDB for semantic retrieval of tax documents
+- **Backend**: FastAPI (Python)
+- **Frontend**: React + Vite + Tailwind CSS
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.10+
-- Node.js 16+
+- Node.js 18+
 - OpenAI API Key
 
-### 1. Install Python Dependencies
+### 1. Install Dependencies
 ```bash
+# Backend
 pip install -r requirements.txt
+
+# Frontend
+cd frontend
+npm install
 ```
 
 ### 2. Configure Environment
-Create/edit `.env` file in the root directory:
-```
-OPENAI_API_KEY=your_key_here
+Create a `.env` file in the root directory:
+```env
+OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-### 3. Start Backend
+### 3. Run the Application
+
+**Start Backend:**
 ```bash
 cd backend
-py -3.11 -m uvicorn main:app --reload
-# Or if you only have one python version:
-# python -m uvicorn main:app --reload
+python main.py
 ```
-Backend runs at: `http://localhost:8000`
+*Backend runs at `http://localhost:8000`*
 
-### 4. Start Frontend
-Open a new terminal:
+**Start Frontend:**
 ```bash
 cd frontend
-npm install
 npm run dev
 ```
-Frontend runs at: `http://localhost:5173`
+*Frontend runs at `http://localhost:5173`*
+
+## ✨ Key Features
+
+- **Agentic Retrieval**: Uses conditional logic to pull data from official tax documents only when needed.
+- **Persistent History**: Conversations are saved and can be restored from the sidebar.
+- **Thread Management**: Start new chats or delete old ones from your history.
+- **Dark/Light Mode**: Premium UI with a theme toggle for comfortable reading.
+- **Up-to-Date Knowledge**: Aware of name changes like **FIRS** becoming the **NRS (Nigeria Revenue Service)**.
+- **Source Citations**: Clearly indicates which documents were used to generate answers.
 
 ## 📁 Project Structure
 
 ```
 Tax_Project/
 ├── backend/
-│   ├── main.py              # FastAPI server
-│   ├── agent_logic.py       # LangGraph agent implementation
-│   └── utils_openai.py      # Utility functions
+│   ├── main.py              # FastAPI server & API endpoints
+│   ├── agent_logic.py       # LangGraph agent & tool definitions
+│   └── utils_openai.py      # OpenAI & VectorStore utilities
 ├── frontend/
-│   └── src/
-│       ├── App.jsx          # Main React component
-│       └── index.css        # Tailwind styles
-├── chroma_db/               # Vector database (pre-populated)
-├── .env                     # API keys (not in git)
+│   ├── src/
+│   │   ├── App.jsx          # Main UI component
+│   │   └── index.css        # Global styles & theme tokens
+│   └── index.html           # Entry point
+├── chroma_db/               # Persistent vector storage
+├── .env                     # Configuration keys
 └── requirements.txt         # Python dependencies
 ```
 
-## ✨ Features
+## 🎯 API Reference
 
-### Backend
-- **Conditional Retrieval**: Only searches documents when needed
-- **Conversation Memory**: Maintains context across messages
-- **Session Management**: Multiple chat threads support
-- **Source Citation**: References document sources
+- `GET /threads`: Retrieve all active chat sessions.
+- `GET /threads/{id}/messages`: Fetch message history for a specific thread.
+- `POST /chat`: Submit a message to the agent.
+- `DELETE /threads/{id}`: Remove a thread from history.
 
-### Frontend
-- **ChatGPT-style UI**: Dark theme with sidebar
-- **Chat History**: View and switch between conversations
-- **New Chat**: Start fresh conversations
-- **Real-time Updates**: Streaming-ready interface
+## 📝 Important Notes
 
-## 🎯 Key Endpoints
+- **FIRS Rebrand**: The system is instructed to refer to the Federal Inland Revenue Service as the **Nigeria Revenue Service (NRS)** per the new reforms.
+- **Memory**: The current version uses an in-memory checkpointer (`MemorySaver`). Restarting the backend will clear message history, though thread metadata is currently stored in a volatile `threads_db` dictionary for this MVP.
+- **Accuracy**: Always verify AI-generated tax advice with official NRS publications.
 
-- `GET /` - Health check
-- `GET /threads` - List all chat sessions
-- `POST /chat` - Send message and get response
-  ```json
-  {
-    "messages": [{"role": "user", "content": "question"}],
-    "thread_id": "optional-uuid"
-  }
-  ```
+## ✅ Project Status
 
-## 🧪 Testing
-
-1. Start both backend and frontend
-2. Open browser to `http://localhost:5173`
-3. Try these queries:
-   - "Hi" → Should greet without retrieval
-   - "What are the tax reform bills about?" → Should retrieve documents
-   - "Which states benefit most?" → Should cite sources
-
-## 📝 Notes
-
-- The vector database (`chroma_db`) is pre-populated with tax reform documents
-- All conversations are stored in memory (restart clears history)
-- The agent uses `gpt-5-nano` model by default
-- Frontend communicates with backend via REST API (fastapi)
-
-## 🎓 Project Requirements Met
-
-✅ Agentic RAG with conditional retrieval  
-✅ Conversation memory using LangGraph  
-✅ Source citations  
-✅ FastAPI backend  
-✅ React frontend with clean UI  
-✅ README with setup instructions  
-
-
+✅ Agentic RAG implementation  
+✅ Conversation persistence  
+✅ Theme customization  
+✅ Thread management (Create/Select/Delete)  
+✅ Automated source citations  
