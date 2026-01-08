@@ -4,6 +4,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolNode
 from langchain.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.tools import tool
+from datetime import datetime
 
 
 from typing import Literal
@@ -94,12 +95,87 @@ Return only the most relevant excerpts needed to answer accurately.
 print(" Retrieval tool created")
 
 
+
+@tool
+def get_current_date() -> str:
+    """
+    PURPOSE:
+    --------
+    Returns the current date in ISO format (YYYY-MM-DD) so the agent can reason
+    correctly about time-sensitive statements.
+
+    WHY THIS TOOL EXISTS:
+    ---------------------
+    This tool prevents the agent from speaking as if key dates (e.g. January 1, 2026)
+    are always in the future. Nigerian tax reform explanations depend heavily on
+    whether a rule:
+      - is upcoming,
+      - has started applying, or
+      - already applies to income earned.
+
+    Without this tool, the agent may default to static phrasing like:
+      "This will start in January 2026"
+    even when January 2026 has already passed.
+
+    WHEN THE AGENT MUST USE THIS TOOL:
+    ---------------------------------
+    The agent MUST call this tool BEFORE mentioning or implying anything related to:
+      - Current date
+      - Current year
+      - "Now", "currently", "as at today"
+      - Whether January 1, 2026 is in the future or past
+      - Whether new tax rules are already applying or will apply later
+      - Statements like:
+          • "from next year"
+          • "has started"
+          • "will begin"
+          • "is now in effect"
+          • "has not started yet"
+
+    WHAT THE TOOL RETURNS:
+    ---------------------
+    A string representing today's date in ISO format:
+        YYYY-MM-DD
+
+    HOW THE AGENT SHOULD USE THE OUTPUT:
+    -----------------------------------
+    - Compare the returned date with key reform dates (e.g. 2026-01-01).
+    - Adjust language accordingly:
+        • If today < 2026-01-01 → say "will apply from January 1, 2026"
+        • If today >= 2026-01-01 → say "now applies to income earned from January 1, 2026"
+    - NEVER expose the raw date value to the user unless explicitly asked.
+    - NEVER mention that a tool was used.
+
+    IMPORTANT CONSTRAINTS:
+    ----------------------
+    - This tool provides date awareness ONLY.
+    - It does NOT provide legal interpretation.
+    - It does NOT validate tax rules.
+    - It must be silently used in the background.
+
+    FAILURE TO USE THIS TOOL:
+    -------------------------
+    If the agent discusses timing without using this tool, it risks:
+      - Giving outdated guidance
+      - Incorrectly framing user obligations
+      - Losing user trust
+
+    RETURN VALUE:
+    -------------
+    str: Current date in YYYY-MM-DD format.
+    """
+    return datetime.now().strftime("%Y-%m-%d")
+
+print(" Current date tool created")
+
+
+
 #System Prompt
 system_prompt = system_prompt_def()
 print(" System prompt configured")
 
 #Bind tools to LLM
-tools = [retrieve_documents] 
+tools = [retrieve_documents, get_current_date] 
 llm_with_tools = llm.bind_tools(tools)
 
 def assistant(state: MessagesState) -> dict:

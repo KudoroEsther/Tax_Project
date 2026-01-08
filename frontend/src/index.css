@@ -2,17 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom scrollbar if needed */
+/* Scrollbar styling for dark mode */
+.dark ::-webkit-scrollbar,
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #f1f1f1; 
+  background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #888; 
+  background: #4b5563;
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #555; 
+  background: #6b7280;
+}
+
+/* Light mode scrollbar override via class */
+.light-scrollbar::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+}
+
+.light-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
 }

@@ -45,6 +45,52 @@ def get_threads():
     )
     return sorted_threads
 
+@app.get("/threads/{thread_id}/messages")
+def get_thread_messages(thread_id: str):
+    """Retrieve message history for a specific thread from the LangGraph checkpointer."""
+    try:
+        config = {"configurable": {"thread_id": thread_id}}
+        state = graph.get_state(config)
+        
+        if not state or not state.values:
+            return {"messages": []}
+        
+        messages = state.values.get("messages", [])
+        
+        # Convert LangChain messages to JSON-serializable format
+        formatted_messages = []
+        for msg in messages:
+            if hasattr(msg, 'type'):
+                role = "user" if msg.type == "human" else "assistant"
+            else:
+                role = "user" if isinstance(msg, HumanMessage) else "assistant"
+            
+            # Skip system messages and tool messages
+            if hasattr(msg, 'type') and msg.type in ["system", "tool"]:
+                continue
+            if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                continue  # Skip AI messages that are just tool calls
+                
+            formatted_messages.append({
+                "role": role,
+                "content": msg.content
+            })
+        
+        return {"messages": formatted_messages}
+        
+    except Exception as e:
+        print(f"Error fetching thread messages: {e}")
+        return {"messages": []}
+
+@app.delete("/threads/{thread_id}")
+def delete_thread(thread_id: str):
+    """Delete a specific thread from metadata storage."""
+    if thread_id in threads_db:
+        del threads_db[thread_id]
+        return {"status": "omitted", "message": f"Thread {thread_id} deleted"}
+    else:
+        raise HTTPException(status_code=404, detail="Thread not found")
+
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     try:

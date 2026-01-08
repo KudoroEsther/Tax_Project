@@ -102,10 +102,10 @@ Tax_Project/
 
 - The vector database (`chroma_db`) is pre-populated with tax reform documents
 - All conversations are stored in memory (restart clears history)
-- The agent uses `gpt-4o` model by default
-- Frontend communicates with backend via REST API
+- The agent uses `gpt-5-nano` model by default
+- Frontend communicates with backend via REST API (fastapi)
 
-## 🎓 Academic Requirements Met
+## 🎓 Project Requirements Met
 
 ✅ Agentic RAG with conditional retrieval  
 ✅ Conversation memory using LangGraph  
@@ -114,4 +114,4 @@ Tax_Project/
 ✅ React frontend with clean UI  
 ✅ README with setup instructions  
 
-**Note**: Demo video should be created separately as per assignment requirements.
+

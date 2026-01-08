@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { PlusIcon, ChatBubbleLeftIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, ChatBubbleLeftIcon, PaperAirplaneIcon, SunIcon, MoonIcon, TrashIcon } from '@heroicons/react/24/outline'
 
 function App() {
   const [threads, setThreads] = useState([])
@@ -7,6 +7,7 @@ function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [darkMode, setDarkMode] = useState(true)
 
   const messagesEndRef = useRef(null)
 
@@ -41,17 +42,44 @@ function App() {
     setInput('')
   }
 
-  const selectThread = (threadId) => {
-    // Ideally we would fetch message history for this thread from backend
-    // But for now, since backend API is stateless regarding GET history (MemorySaver is internal),
-    // we might start empty or need an endpoint to sync history.
-    // LIMITATION: Simple implementation doesn't sync old messages to frontend yet.
-    // For now, let's just switch context ID so new messages go to that thread.
-    // To make it real, we'd need GET /threads/{id}/messages. 
-    // Let's assume for this MVP we just switch ID and clear screen (imperfect but functional for "new chat" feeling).
-    // Or better: Just switch ID.
+  const selectThread = async (threadId) => {
     setCurrentThreadId(threadId)
-    setMessages([]) // Clearing because we can't fetch old ones easily without new endpoint
+    setIsLoading(true)
+
+    try {
+      const res = await fetch(`http://localhost:8000/threads/${threadId}/messages`)
+      if (res.ok) {
+        const data = await res.json()
+        setMessages(data.messages || [])
+      } else {
+        setMessages([])
+      }
+    } catch (e) {
+      console.error("Failed to fetch thread messages", e)
+      setMessages([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const deleteThread = async (e, threadId) => {
+    e.stopPropagation() // Prevent selecting thread when clicking delete
+
+
+    try {
+      const res = await fetch(`http://localhost:8000/threads/${threadId}`, {
+        method: 'DELETE'
+      })
+
+      if (res.ok) {
+        if (currentThreadId === threadId) {
+          createNewChat()
+        }
+        fetchThreads()
+      }
+    } catch (e) {
+      console.error("Failed to delete thread", e)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -65,7 +93,7 @@ function App() {
 
     try {
       const payload = {
-        messages: [userMessage], // Only sending new one is sufficient for backend logic now
+        messages: [userMessage],
         thread_id: currentThreadId
       }
 
@@ -79,10 +107,9 @@ function App() {
 
       const data = await response.json()
 
-      // Update thread ID if it was a new chat
       if (!currentThreadId && data.thread_id) {
         setCurrentThreadId(data.thread_id)
-        fetchThreads() // Refresh sidebar
+        fetchThreads()
       }
 
       const botMessage = { role: 'assistant', content: data.response }
@@ -96,15 +123,24 @@ function App() {
     }
   }
 
+  const toggleTheme = () => {
+    setDarkMode(!darkMode)
+  }
+
   return (
-    <div className="flex h-screen bg-gray-900 text-gray-100 font-sans overflow-hidden">
+    <div className={`flex h-screen font-sans overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-100 text-gray-900'
+      }`}>
 
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-950 flex flex-col border-r border-gray-800">
+      <aside className={`w-64 flex flex-col border-r transition-colors duration-300 ${darkMode ? 'bg-gray-950 border-gray-800' : 'bg-white border-gray-200'
+        }`}>
         <div className="p-4">
           <button
             onClick={createNewChat}
-            className="w-full flex items-center gap-3 px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors border border-gray-700 text-sm font-medium"
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-md transition-colors border text-sm font-medium ${darkMode
+              ? 'bg-gray-800 hover:bg-gray-700 border-gray-700'
+              : 'bg-gray-100 hover:bg-gray-200 border-gray-300'
+              }`}
           >
             <PlusIcon className="w-5 h-5" />
             New Chat
@@ -114,39 +150,63 @@ function App() {
         <div className="flex-1 overflow-y-auto px-2">
           <div className="space-y-1">
             {threads.map(thread => (
-              <button
-                key={thread.id}
-                onClick={() => selectThread(thread.id)}
-                className={`w-full text-left px-3 py-3 rounded-md text-sm truncate flex items-center gap-3 transition-colors ${currentThreadId === thread.id ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
-                  }`}
-              >
-                <ChatBubbleLeftIcon className="w-4 h-4 shrink-0" />
-                <span className="truncate">{thread.title}</span>
-              </button>
+              <div key={thread.id} className="group relative">
+                <button
+                  onClick={() => selectThread(thread.id)}
+                  className={`w-full text-left px-3 py-3 rounded-md text-sm truncate flex items-center gap-3 transition-colors ${currentThreadId === thread.id
+                    ? (darkMode ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-900')
+                    : (darkMode ? 'text-gray-400 hover:bg-gray-900 hover:text-gray-200' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900')
+                    }`}
+                >
+                  <ChatBubbleLeftIcon className="w-4 h-4 shrink-0" />
+                  <span className="truncate pr-6">{thread.title}</span>
+                </button>
+                <button
+                  onClick={(e) => deleteThread(e, thread.id)}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? 'text-gray-500 hover:text-red-400 hover:bg-gray-800' : 'text-gray-400 hover:text-red-500 hover:bg-gray-200'
+                    }`}
+                  title="Delete chat"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                </button>
+              </div>
             ))}
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-800 text-xs text-gray-500">
-          Tax Reform Assistant v1.0
+        <div className={`p-4 border-t flex items-center justify-between text-xs ${darkMode ? 'border-gray-800 text-gray-500' : 'border-gray-200 text-gray-500'
+          }`}>
+          <span>TaxGPT v1.0</span>
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded-md transition-colors ${darkMode
+              ? 'hover:bg-gray-800 text-gray-400 hover:text-yellow-400'
+              : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+              }`}
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {darkMode ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+          </button>
         </div>
       </aside>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col bg-gray-800 relative">
-        {/* Header (Optional mobile helper) */}
-        <div className="md:hidden p-4 bg-gray-900 border-b border-gray-800 text-center">
-          Tax Assistant
+      <main className={`flex-1 flex flex-col relative transition-colors duration-300 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'
+        }`}>
+        {/* Header (Mobile) */}
+        <div className={`md:hidden p-6 border-b text-center transition-colors duration-300 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'
+          }`}>
+          TaxGPT
         </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 md:p-10 space-y-6">
           {messages.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-50">
-              <div className="text-4xl mb-4">🇳🇬</div>
-              <h2 className="text-xl font-semibold">Nigerian Tax Reform Assistant</h2>
+            <div className={`h-full flex flex-col items-center justify-center opacity-50 ${darkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+              <h2 className="text-4xl font-bold">TaxGPT</h2>
               <p className="mt-2 text-sm text-center max-w-md">
-                Ask any question about the 2024 Tax Reform Bills.
+                Your AI assistant for Nigerian Tax Reform Bills.
               </p>
             </div>
           )}
@@ -156,17 +216,19 @@ function App() {
               key={index}
               className={`flex gap-4 max-w-3xl mx-auto ${msg.role === 'user' ? 'justify-end' : ''}`}
             >
-              <div className={`p-1 rounded-sm w-8 h-8 flex items-center justify-center shrink-0 ${msg.role === 'assistant' ? 'bg-green-600' : 'hidden'
+              <div className={`p-1 rounded-sm w-8 h-8 flex items-center justify-center shrink-0 ${msg.role === 'assistant' ? 'bg-green-600 text-white' : 'hidden'
                 }`}>
                 {msg.role === 'assistant' && "AI"}
               </div>
 
-              <div className={`prose prose-invert max-w-none flex-1 leading-7 ${msg.role === 'user' ? 'bg-gray-700 px-4 py-2 rounded-2xl' : ''
+              <div className={`prose max-w-none flex-1 leading-7 ${msg.role === 'user'
+                ? (darkMode ? 'bg-gray-700 text-white' : 'bg-green-600 text-white') + ' px-4 py-2 rounded-2xl'
+                : (darkMode ? 'prose-invert' : '')
                 }`}>
                 <div className="whitespace-pre-wrap">{msg.content}</div>
               </div>
 
-              <div className={`p-1 rounded-sm w-8 h-8 flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-gray-500' : 'hidden'
+              <div className={`p-1 rounded-sm w-8 h-8 flex items-center justify-center shrink-0 ${msg.role === 'user' ? (darkMode ? 'bg-gray-500' : 'bg-green-700') + ' text-white' : 'hidden'
                 }`}>
                 U
               </div>
@@ -175,8 +237,8 @@ function App() {
 
           {isLoading && (
             <div className="flex gap-4 max-w-3xl mx-auto">
-              <div className="p-1 rounded-sm w-8 h-8 bg-green-600 flex items-center justify-center shrink-0">AI</div>
-              <div className="animate-pulse flex items-center">Thinking...</div>
+              <div className="p-1 rounded-sm w-8 h-8 bg-green-600 flex items-center justify-center shrink-0 text-white">AI</div>
+              <div className="animate-pulse flex items-center">Overthinking your message...</div>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -190,7 +252,10 @@ function App() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask a question..."
-              className="w-full bg-gray-700 text-white placeholder-gray-400 border border-gray-600 rounded-xl px-4 py-4 pr-12 focus:outline-none focus:border-gray-500 focus:bg-gray-700 shadow-lg"
+              className={`w-full border rounded-xl px-4 py-4 pr-12 focus:outline-none shadow-lg transition-colors duration-300 ${darkMode
+                ? 'bg-gray-700 text-white placeholder-gray-400 border-gray-600 focus:border-gray-500'
+                : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300 focus:border-green-500'
+                }`}
               disabled={isLoading}
             />
             <button
@@ -201,7 +266,7 @@ function App() {
               <PaperAirplaneIcon className="w-4 h-4" />
             </button>
           </form>
-          <p className="text-center text-xs text-gray-500 mt-2">
+          <p className={`text-center text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
             AI can make mistakes. Verify information with official documents.
           </p>
         </div>
